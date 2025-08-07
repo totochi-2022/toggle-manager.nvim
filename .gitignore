@@ -1,0 +1,24 @@
+# Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Lua
+*.luac
+
+# Testing
+test/
+spec/
+
+# Documentation build
+doc/tags

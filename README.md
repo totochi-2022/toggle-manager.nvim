@@ -1,6 +1,6 @@
 # toggle-manager.nvim
 
-**Version 1.1.0**
+**Version 1.2.0**
 
 A comprehensive toggle system for Neovim features with beautiful UI and lualine integration.
 
@@ -262,7 +262,7 @@ toggle_manager.show_toggle_menu()  -- alias for show_menu()
 
 ### Version Migration
 
-**From v1.0.x to v1.1.x:**
+**From v1.1.x to v1.2.x:**
 
 - ✅ **API**: `show_toggle_menu()` → `show_menu()` (old name still works)
 - ✅ **Colors**: Enhanced color extraction logic (no changes needed)

@@ -57,9 +57,9 @@ function M.get_or_create_highlight(color_def, toggle_name, state_index)
                 if color_def.fg:match('^#') then
                     hl_opts.fg = color_def.fg  -- Direct value
                 else
-                    -- Get color from highlight group
+                    -- Get fg color from highlight group
                     local src_hl = vim.api.nvim_get_hl(0, { name = color_def.fg })
-                    hl_opts.fg = src_hl.fg and string.format('#%06x', src_hl.fg) or '#000000'
+                    hl_opts.fg = (src_hl.fg and string.format('#%06x', src_hl.fg)) or '#000000'
                 end
             end
         else
@@ -72,10 +72,10 @@ function M.get_or_create_highlight(color_def, toggle_name, state_index)
                 if color_def.bg:match('^#') then
                     hl_opts.bg = color_def.bg  -- Direct value
                 else
-                    -- Get color from highlight group (use fg as bg)
+                    -- Get color from highlight group (prioritize bg, then fg)
                     local src_hl = vim.api.nvim_get_hl(0, { name = color_def.bg })
-                    hl_opts.bg = src_hl.fg and string.format('#%06x', src_hl.fg) or 
-                               (src_hl.bg and string.format('#%06x', src_hl.bg) or '#808080')
+                    hl_opts.bg = (src_hl.bg and string.format('#%06x', src_hl.bg)) or
+                               (src_hl.fg and string.format('#%06x', src_hl.fg)) or '#808080'
                 end
             end
         else

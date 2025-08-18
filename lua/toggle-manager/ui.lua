@@ -43,51 +43,9 @@ local function create_preset_highlights()
     end
 end
 
--- 動的にハイライトグループを作成または取得
+-- 動的にハイライトグループを作成または取得（highlights.luaを使用）
 function M.get_or_create_highlight(color_def, toggle_name, state_index)
-    if type(color_def) == 'string' then
-        -- 既存のハイライトグループ名を使用
-        return color_def
-    elseif type(color_def) == 'table' then
-        -- fg/bgが指定されている場合、動的にハイライトグループを作成
-        local hl_name = string.format('Toggle_%s_%d', toggle_name, state_index)
-        local hl_opts = { bold = color_def.bold ~= false }  -- デフォルトはtrue
-        
-        -- fgの処理
-        if color_def.fg then
-            if type(color_def.fg) == 'string' then
-                if color_def.fg:match('^#') then
-                    hl_opts.fg = color_def.fg  -- 直値の場合
-                else
-                    -- ハイライトグループから色を取得
-                    local src_hl = vim.api.nvim_get_hl(0, { name = color_def.fg })
-                    hl_opts.fg = src_hl.fg and string.format('#%06x', src_hl.fg) or '#000000'
-                end
-            end
-        else
-            hl_opts.fg = '#000000'  -- デフォルト
-        end
-        
-        -- bgの処理
-        if color_def.bg then
-            if type(color_def.bg) == 'string' then
-                if color_def.bg:match('^#') then
-                    hl_opts.bg = color_def.bg  -- 直値の場合
-                else
-                    -- ハイライトグループから色を取得（前景色を背景色として使用）
-                    local src_hl = vim.api.nvim_get_hl(0, { name = color_def.bg })
-                    hl_opts.bg = src_hl.fg and string.format('#%06x', src_hl.fg) or 
-                               (src_hl.bg and string.format('#%06x', src_hl.bg) or '#808080')
-                end
-            end
-        else
-            hl_opts.bg = '#808080'  -- デフォルト
-        end
-        
-        vim.api.nvim_set_hl(0, hl_name, hl_opts)
-        return hl_name
-    end
-    return 'Normal'
+    return highlights.get_or_create_highlight(color_def, toggle_name, state_index)
 end
 
 -- ハイライト初期化
@@ -427,6 +385,9 @@ function M.get_lualine_component()
         if visible_count == 0 then
             return ''
         end
+        
+        -- 最初にリセット用の透明文字を入れる（lualineのセパレータ対策）
+        table.insert(parts, '%#lualine_x_normal# ')
         
         for _, key in ipairs(sorted_keys) do
             local def = toggle_definitions[key]

@@ -418,10 +418,11 @@ function M.get_lualine_component()
                 color_name = 'Normal'
             end
 
-            local text = string.upper(key)
+            -- display_charが定義されていれば使用、なければキー名を使用
+            local display_text = def.display_char and string.upper(def.display_char) or string.upper(key)
 
             -- mainブランチ方式：%#ハイライトグループ#テキスト%#Normal#
-            local colored_text = string.format('%%#%s#%s%%#Normal#', color_name, text)
+            local colored_text = string.format('%%#%s#%s%%#Normal#', color_name, display_text)
             table.insert(parts, colored_text)
         end
 

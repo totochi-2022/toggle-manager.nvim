@@ -201,10 +201,9 @@ function M.show_toggle_menu()
             -- lualine表示状態
             local lualine_status = lualine_display_state[key] and '[表示]' or '[非表示]'
             
-            -- バッファごとの設定は変更不可であることを表示
-            local buffer_only_toggles = {'r', 'p', 'c'}
-            local is_buffer_only = vim.tbl_contains(buffer_only_toggles, key)
-            local readonly_mark = is_buffer_only and ' (表示のみ)' or ''
+            -- readonlyフラグまたはset_stateが未定義の場合は表示のみマークを表示
+            local is_readonly = def.readonly == true or type(def.set_state) ~= 'function'
+            local readonly_mark = is_readonly and ' (表示のみ)' or ''
             
             local line = string.format('%s  %s %-15s [%s]%s / %s %s',
                 key, string.upper(key), def.desc, current_state, readonly_mark, string.upper(key), lualine_status)
@@ -299,13 +298,13 @@ function M.show_toggle_menu()
     local function setup_keymaps(current_buf, current_win)
         -- 小文字キー（状態切り替え）
         for key, def in pairs(toggle_definitions) do
-            -- バッファごとの設定は変更不可（表示のみ）
-            local buffer_only_toggles = {'r', 'p', 'c'}
-            local is_buffer_only = vim.tbl_contains(buffer_only_toggles, key)
+            -- readonlyフラグまたはset_stateが未定義の場合は表示のみ
+            local is_readonly = def.readonly == true or type(def.set_state) ~= 'function'
             
-            if is_buffer_only then
+            if is_readonly then
                 vim.keymap.set('n', key, function()
-                    print(string.format("%s は表示のみです（バッファごとの設定のため変更不可）", def.desc))
+                    local reason = def.readonly and "読み取り専用" or "設定関数未定義"
+                    print(string.format("%s は表示のみです（%s）", def.desc, reason))
                 end, { buffer = current_buf, silent = true })
             else
                 vim.keymap.set('n', key, function()

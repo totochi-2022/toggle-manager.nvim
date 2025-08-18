@@ -37,7 +37,7 @@ local function create_preset_highlights()
             return { fg = '#000000', bg = hl.bg or '#4444AA', bold = true }
         end,
     }
-    
+
     for name, get_colors in pairs(presets) do
         vim.api.nvim_set_hl(0, name, get_colors())
     end
@@ -52,7 +52,7 @@ end
 function M.init_highlights()
     -- 初期化時にプリセットハイライトを作成
     vim.defer_fn(create_preset_highlights, 100)
-    
+
     -- カラースキーム変更時にもハイライトグループを再作成
     vim.api.nvim_create_autocmd('ColorScheme', {
         callback = function()
@@ -97,7 +97,7 @@ local function save_lualine_display_state()
     if vim.fn.isdirectory(dir) == 0 then
         vim.fn.mkdir(dir, 'p')
     end
-    
+
     local file = io.open(lualine_display_file, 'w')
     if file then
         file:write(vim.fn.json_encode(lualine_display_state))
@@ -118,11 +118,11 @@ function M.show_toggle_menu()
         print('⚠️  Toggle definitions not loaded yet!')
         return
     end
-    
+
     -- 元のバッファを記憶
     local original_buf = vim.api.nvim_get_current_buf()
     local original_win = vim.api.nvim_get_current_win()
-    
+
     -- ウィンドウを作成する関数
     local function create_window()
         local lines = {
@@ -131,20 +131,20 @@ function M.show_toggle_menu()
             '小文字=状態切替  大文字=lualine表示切替',
             ''
         }
-        
+
         -- アルファベット順にソート
         local sorted_keys = {}
         for key, _ in pairs(toggle_definitions) do
             table.insert(sorted_keys, key)
         end
         table.sort(sorted_keys)
-        
+
         for _, key in ipairs(sorted_keys) do
             local def = toggle_definitions[key]
             -- 常に最新の状態を取得
             local current_state = def.get_state()
             local state_index = 1
-            
+
             -- 現在の状態のインデックスを取得
             for i, state in ipairs(def.states) do
                 if state == current_state then
@@ -152,38 +152,38 @@ function M.show_toggle_menu()
                     break
                 end
             end
-            
+
             -- 色を取得（背景色として使用）
             local color_name = def.colors[state_index] or 'Normal'
-            
+
             -- lualine表示状態
             local lualine_status = lualine_display_state[key] and '[表示]' or '[非表示]'
-            
+
             -- readonlyフラグまたはset_stateが未定義の場合は表示のみマークを表示
             local is_readonly = def.readonly == true or type(def.set_state) ~= 'function'
             local readonly_mark = is_readonly and ' (表示のみ)' or ''
-            
+
             local line = string.format('%s  %s %-15s [%s]%s / %s %s',
                 key, string.upper(key), def.desc, current_state, readonly_mark, string.upper(key), lualine_status)
-            
+
             table.insert(lines, line)
         end
-        
+
         table.insert(lines, '')
         table.insert(lines, 's=現状態を保存  ESC/q=終了')
-        
+
         -- ウィンドウサイズを計算
         local width = 70
         local height = #lines + 2
         local col = math.floor((vim.o.columns - width) / 2)
         local row = math.floor((vim.o.lines - height) / 2)
-        
+
         -- バッファを作成
         local buf = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
         vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
         vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-        
+
         -- floating windowを作成
         local win = vim.api.nvim_open_win(buf, true, {
             relative = 'editor',
@@ -195,30 +195,30 @@ function M.show_toggle_menu()
             border = 'rounded',
             title = ' Toggle Control ',
             title_pos = 'center',
-            zindex = 50  -- lualineより低い優先度に設定
+            zindex = 50 -- lualineより低い優先度に設定
         })
-        
+
         -- 色付け（シンプル版）
         local ns_id = vim.api.nvim_create_namespace('toggle_ui')
         for i, key in ipairs(sorted_keys) do
-            local line_num = i + 3  -- ヘッダー行を考慮
+            local line_num = i + 3 -- ヘッダー行を考慮
             local def = toggle_definitions[key]
             -- 常に最新の状態を取得
             local current_state = def.get_state()
             local state_index = 1
-            
+
             for j, state in ipairs(def.states) do
                 if state == current_state then
                     state_index = j
                     break
                 end
             end
-            
+
             -- 状態に応じた色を取得（動的ハイライト対応）
             local toggle_defs_module = M
             local color_def = def.colors[state_index]
             local color_name
-            
+
             if color_def then
                 -- get_or_create_highlight関数を使用
                 if toggle_defs_module.get_or_create_highlight then
@@ -230,35 +230,35 @@ function M.show_toggle_menu()
             else
                 color_name = 'Normal'
             end
-            
+
             -- 状態部分のみをハイライト（文字列の位置を正確に計算）
-            local line_text = lines[line_num + 1]  -- linesは1-indexedだがline_numは0-indexed
+            local line_text = lines[line_num + 1] -- linesは1-indexedだがline_numは0-indexed
             if line_text then
                 local state_start = line_text:find('%[' .. vim.pesc(current_state) .. '%]')
                 if state_start then
-                    local state_end = state_start + #current_state + 1  -- []も含む
+                    local state_end = state_start + #current_state + 1 -- []も含む
                     vim.api.nvim_buf_add_highlight(buf, ns_id, color_name, line_num, state_start - 1, state_end)
                 end
             end
         end
-        
+
         -- lualine を強制的に再描画
         vim.schedule(function()
             if pcall(require, 'lualine') then
                 require('lualine').refresh()
             end
         end)
-        
+
         return buf, win
     end
-    
+
     -- キーマッピングを設定
     local function setup_keymaps(current_buf, current_win)
         -- 小文字キー（状態切り替え）
         for key, def in pairs(toggle_definitions) do
             -- readonlyフラグまたはset_stateが未定義の場合は表示のみ
             local is_readonly = def.readonly == true or type(def.set_state) ~= 'function'
-            
+
             if is_readonly then
                 vim.keymap.set('n', key, function()
                     local reason = def.readonly and "読み取り専用" or "設定関数未定義"
@@ -275,24 +275,24 @@ function M.show_toggle_menu()
                             break
                         end
                     end
-                    
+
                     local next_index = current_index + 1
                     if next_index > #def.states then
                         next_index = 1
                     end
-                    
+
                     local next_state = def.states[next_index]
-                    
+
                     -- デバッグ情報
                     print(string.format("Toggle %s: %s → %s", key, current_state, next_state))
-                    
+
                     -- 状態変更を実行
                     def.set_state(next_state)
-                    
+
                     -- 状態変更後の確認
                     local after_state = def.get_state()
                     print(string.format("After set: %s", after_state))
-                    
+
                     -- ウィンドウを更新
                     if vim.api.nvim_win_is_valid(current_win) then
                         vim.api.nvim_win_close(current_win, true)
@@ -301,17 +301,17 @@ function M.show_toggle_menu()
                     setup_keymaps(new_buf, new_win)
                 end, { buffer = current_buf, silent = true })
             end
-            
+
             -- 大文字キー（lualine表示切り替え）
             vim.keymap.set('n', string.upper(key), function()
                 lualine_display_state[key] = not lualine_display_state[key]
                 save_lualine_display_state()
-                
+
                 -- lualineを更新
                 if pcall(require, 'lualine') then
                     require('lualine').refresh()
                 end
-                
+
                 -- ウィンドウを更新
                 if vim.api.nvim_win_is_valid(current_win) then
                     vim.api.nvim_win_close(current_win, true)
@@ -320,7 +320,7 @@ function M.show_toggle_menu()
                 setup_keymaps(new_buf, new_win)
             end, { buffer = current_buf, silent = true })
         end
-        
+
         -- 状態保存
         vim.keymap.set('n', 's', function()
             save_defaults()
@@ -328,18 +328,18 @@ function M.show_toggle_menu()
                 vim.api.nvim_win_close(current_win, true)
             end
         end, { buffer = current_buf, silent = true })
-        
+
         -- 終了
         local function close_window()
             if vim.api.nvim_win_is_valid(current_win) then
                 vim.api.nvim_win_close(current_win, true)
             end
         end
-        
+
         vim.keymap.set('n', 'q', close_window, { buffer = current_buf, silent = true })
         vim.keymap.set('n', '<ESC>', close_window, { buffer = current_buf, silent = true })
     end
-    
+
     -- 初期ウィンドウを作成
     local buf, win = create_window()
     setup_keymaps(buf, win)
@@ -349,7 +349,7 @@ end
 function M.setup()
     -- lualine表示状態を読み込み
     load_lualine_display_state()
-    
+
     -- デフォルトでは全て非表示
     local toggle_definitions = config.get_definitions()
     for key, _ in pairs(toggle_definitions) do
@@ -365,11 +365,11 @@ function M.get_lualine_component()
         local toggle_definitions = config.get_definitions()
         -- 実行時に直接toggle_definitionsを参照
         if not toggle_definitions or vim.tbl_isempty(toggle_definitions) then
-            return ''  -- 定義がない場合は空文字を返す
+            return '' -- 定義がない場合は空文字を返す
         end
-        
+
         local parts = {}
-        
+
         -- アルファベット順に並べる
         local sorted_keys = {}
         local visible_count = 0
@@ -380,20 +380,20 @@ function M.get_lualine_component()
             end
         end
         table.sort(sorted_keys)
-        
+
         -- 表示される要素がない場合は空文字
         if visible_count == 0 then
             return ''
         end
-        
+
         -- 最初にリセット用の透明文字を入れる（lualineのセパレータ対策）
         table.insert(parts, '%#lualine_x_normal# ')
-        
+
         for _, key in ipairs(sorted_keys) do
             local def = toggle_definitions[key]
             local current_state = def.get_state()
             local state_index = 1
-            
+
             -- 現在の状態のインデックスを取得
             for i, state in ipairs(def.states) do
                 if state == current_state then
@@ -401,11 +401,11 @@ function M.get_lualine_component()
                     break
                 end
             end
-            
+
             -- 状態に応じた色を取得（動的ハイライト対応）
             local color_def = def.colors[state_index]
             local color_name
-            
+
             if color_def then
                 -- get_or_create_highlight関数を使用
                 if M.get_or_create_highlight then
@@ -417,14 +417,14 @@ function M.get_lualine_component()
             else
                 color_name = 'Normal'
             end
-            
+
             local text = string.upper(key)
-            
+
             -- mainブランチ方式：%#ハイライトグループ#テキスト%#Normal#
             local colored_text = string.format('%%#%s#%s%%#Normal#', color_name, text)
             table.insert(parts, colored_text)
         end
-        
+
         return table.concat(parts, '') -- スペースなしで連結
     end
 end
@@ -435,10 +435,11 @@ function M.debug_lualine()
     for key, state in pairs(lualine_display_state) do
         print(string.format("%s: %s", key, tostring(state)))
     end
-    
+
     print("\n=== Component Output ===")
     local components = M.get_lualine_components()
     print("Components:", vim.inspect(components))
 end
 
 return M
+

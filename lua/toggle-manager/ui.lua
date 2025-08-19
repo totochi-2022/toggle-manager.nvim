@@ -370,13 +370,17 @@ function M.get_lualine_component()
 
         local parts = {}
 
-        -- アルファベット順に並べる
+        -- アルファベット順に並べる（auto_hide対応）
         local sorted_keys = {}
         local visible_count = 0
-        for key, _ in pairs(toggle_definitions) do
+        for key, def in pairs(toggle_definitions) do
+            -- lualine表示がONで、かつauto_hideの条件をクリアしている場合のみ表示
             if lualine_display_state[key] then
-                table.insert(sorted_keys, key)
-                visible_count = visible_count + 1
+                -- auto_hideがtrueの場合、最初の状態でないときのみ表示
+                if not def.auto_hide or def.get_state() ~= def.states[1] then
+                    table.insert(sorted_keys, key)
+                    visible_count = visible_count + 1
+                end
             end
         end
         table.sort(sorted_keys)

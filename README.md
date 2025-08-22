@@ -269,6 +269,77 @@ toggle_manager.show_toggle_menu()  -- alias for show_menu()
 - ✅ **Config**: Self-contained configuration pattern recommended
 - ✅ **Lualine**: Improved spacing and color handling (no changes needed)
 
+## Development Guidelines
+
+### Required Fields
+
+**Important**: The `colors` array is **mandatory** for all toggle definitions.
+
+```lua
+-- ❌ This will cause errors
+v = {
+    name = 'example',
+    states = { 'off', 'on' },
+    -- Missing colors array!
+    get_state = function() ... end,
+    set_state = function() ... end,
+}
+
+-- ✅ Always include colors array
+v = {
+    name = 'example',
+    states = { 'off', 'on' },
+    colors = {
+        { fg = 'Normal', bg = 'Normal' },
+        { fg = 'Normal', bg = 'Normal' },
+    },
+    get_state = function() ... end,
+    set_state = function() ... end,
+}
+```
+
+### Window-Local Options (⚠️ Advanced)
+
+**Caution**: Window-local options (`cursorcolumn`, `wrap`, `number`, etc.) require special handling due to floating window behavior.
+
+**Problem**: When toggle menu opens in a floating window, `get_state()` cannot access the original window's settings correctly.
+
+**Recommended Solution**:
+
+```lua
+-- DON'T: Direct window-local option access
+get_state = function()
+    return vim.wo.cursorcolumn and 'on' or 'off'  -- ❌ Won't work correctly
+end
+
+-- DO: Global state management with window synchronization  
+get_state = function()
+    return vim.g.toggle_option_state or 'off'  -- ✅ Reliable state tracking
+end,
+set_state = function(state)
+    vim.g.toggle_option_state = state
+    local enable = (state == 'on')
+    
+    -- Apply to all normal windows
+    for _, win in pairs(vim.api.nvim_list_wins()) do
+        local config = vim.api.nvim_win_get_config(win)
+        if config.relative == '' then -- Skip floating windows
+            vim.api.nvim_win_set_option(win, 'cursorcolumn', enable)
+        end
+    end
+    
+    -- Set global default for new windows
+    vim.o.cursorcolumn = enable
+end
+```
+
+### Recommended Patterns
+
+- ✅ **Global options**: `vim.o.option` (simple and reliable)
+- ✅ **Plugin settings**: `vim.g.plugin_setting` (persistent across sessions)
+- ⚠️ **Window-local**: Use global state + window synchronization (complex)
+- ❌ **Buffer-local**: Generally not suitable for toggle systems
+
 ## License
 
 Public Domain - Use freely!

@@ -163,8 +163,11 @@ function M.show_toggle_menu()
             local is_readonly = def.readonly == true or type(def.set_state) ~= 'function'
             local readonly_mark = is_readonly and ' (表示のみ)' or ''
 
-            local line = string.format('%s  %s %-15s [%s]%s / %s %s',
-                key, string.upper(key), def.desc, current_state, readonly_mark, string.upper(key), lualine_status)
+            -- display_charがあれば表示する
+            local display_char = def.display_char and ('(' .. def.display_char .. ') ') or ''
+            
+            local line = string.format('%s  %s %-15s %s[%s]%s / %s %s',
+                key, string.upper(key), def.desc, display_char, current_state, readonly_mark, string.upper(key), lualine_status)
 
             table.insert(lines, line)
         end
